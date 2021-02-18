@@ -1,0 +1,48 @@
+---
+- hosts: kvm
+  gather_facts: True
+  become: True
+  user: root
+  vars_prompt:
+    - name: username
+      prompt: Enter your RHN Red Hat username for system registration
+      private: no
+
+    - name: password
+      prompt: Enter your RHN Red Hat password for system registration
+
+  tasks:
+    - name: Register System
+      redhat_subscription:
+        state: present
+        username: '{{ username }}'
+        password: '{{ password }}'
+   
+    - name: Update all packages
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: Wait for server to restart
+      reboot:
+        reboot_timeout: 3600
+
+    - name: Install libvirt packages
+      dnf:
+        name: 
+          - '@virt'
+          - virt-install
+          - cockpit-machines
+        state: latest
+
+    - name: Enable libvirt
+      systemd:
+        name: libvirtd
+        state: started
+        enabled: True
+
+    - name: Enable Cockpit
+      systemd:
+        name: cockpit.socket
+        state: started
+        enabled: True    
